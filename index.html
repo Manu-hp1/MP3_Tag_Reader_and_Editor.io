@@ -1,98 +1,476 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <title>MP3 Tag Reader & Editor – C Based Metadata Manager</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title> MP3 Tag Reader & Editor </title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── DARK THEME — Dark + Purple ── */
+    :root {
+      --bg:         #0D0A1A;
+      --panel:      #110D1F;
+      --card:       #1A1428;
+      --border:     #2D2450;
+      --purple:     #A855F7;
+      --purple2:    #7C3AED;
+      --purple3:    #6D28D9;
+      --white:      #F5F3FF;
+      --cream:      #DDD6FE;
+      --muted:      #7C6FAE;
+      --dark:       #05030D;
+      --navy:       #0F0B1E;
+      --hover-card: #1F1835;
+      --nav-bg:     rgba(13,10,26,.92);
+    }
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      --bg:         #FAF5FF;
+      --panel:      #F3E8FF;
+      --card:       #FFFFFF;
+      --border:     #DDD6FE;
+      --purple:     #7C3AED;
+      --purple2:    #6D28D9;
+      --purple3:    #5B21B6;
+      --white:      #0D0A1A;
+      --cream:      #1E1B4B;
+      --muted:      #6B6B9A;
+      --dark:       #FAF5FF;
+      --navy:       #F3E8FF;
+      --hover-card: #EDE9FE;
+      --nav-bg:     rgba(250,245,255,.92);
+    }
+    html{transition:background .3s,color .3s;scroll-behavior:smooth;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;overflow-x:hidden;}
+
+    /* Subtle grid bg */
+    body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(168,85,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;}
+
+    /* ── NAV ── */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 4rem;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+    .nav-logo{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--purple);letter-spacing:.1em;}
+    .nav-links{display:flex;gap:2.5rem;}
+    .nav-links a{font-size:.8rem;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s;}
+    .nav-links a:hover{color:var(--white);}
+    .nav-right{display:flex;align-items:center;gap:1rem;}
+    .nav-btn{font-family:'Space Mono',monospace;font-size:.76rem;padding:.45rem 1.2rem;border:1px solid var(--purple);color:var(--purple);background:transparent;text-decoration:none;letter-spacing:.04em;transition:all .2s;}
+    .nav-btn:hover{background:var(--purple);color:var(--dark);}
+
+    /* Theme toggle */
+    .theme-toggle-wrap{display:flex;align-items:center;gap:.5rem;cursor:pointer;}
+    .theme-icon{font-size:.9rem;user-select:none;}
+    .theme-toggle{width:42px;height:22px;background:var(--border);border-radius:999px;position:relative;border:1.5px solid var(--purple);transition:background .3s;flex-shrink:0;}
+    .theme-toggle::after{content:'';position:absolute;width:14px;height:14px;background:var(--purple);border-radius:50%;top:2px;left:2px;transition:transform .3s ease;}
+    [data-theme="light"] .theme-toggle::after{transform:translateX(20px);}
+    #themeIconSun{opacity:.3;}
+    [data-theme="light"] #themeIconMoon{opacity:.3;}
+    [data-theme="light"] #themeIconSun{opacity:1;}
+
+    /* ── HERO ── */
+    .hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:7rem 4rem 4rem;gap:4rem;position:relative;z-index:1;}
+    .hero-tag{display:inline-flex;align-items:center;gap:.5rem;font-family:'Space Mono',monospace;font-size:.7rem;color:var(--purple);letter-spacing:.15em;border:1px solid rgba(168,85,247,.25);padding:.3rem .85rem;margin-bottom:1.8rem;background:rgba(168,85,247,.05);}
+    .hero-tag span{width:6px;height:6px;background:var(--purple);border-radius:50%;animation:blink 2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.4rem,4.2vw,3.8rem);font-weight:800;line-height:1.06;letter-spacing:-.02em;margin-bottom:1rem;}
+    .hero h1 em{font-style:normal;color:var(--purple);}
+    .hero-sub{font-size:1rem;color:var(--cream);line-height:1.75;margin-bottom:1.8rem;max-width:480px;font-weight:300;}
+    .hero-desc{font-size:.87rem;color:var(--muted);line-height:1.8;margin-bottom:2.5rem;max-width:480px;border-left:2px solid var(--border);padding-left:1rem;}
+    .hero-btns{display:flex;gap:1rem;flex-wrap:wrap;}
+    .btn-primary{font-family:'Space Mono',monospace;font-size:.78rem;padding:.82rem 2rem;background:var(--purple);color:var(--dark);text-decoration:none;font-weight:700;letter-spacing:.04em;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem;}
+    .btn-primary:hover{background:var(--purple2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(168,85,247,.25);}
+    .btn-secondary{font-family:'Space Mono',monospace;font-size:.78rem;padding:.82rem 2rem;border:1px solid var(--border);color:var(--cream);text-decoration:none;letter-spacing:.04em;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem;}
+    .btn-secondary:hover{border-color:var(--purple);color:var(--purple);transform:translateY(-2px);}
+    .hero-stats{display:flex;gap:2.5rem;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border);}
+    .stat-num{font-family:'Space Mono',monospace;font-size:1.5rem;color:var(--purple);font-weight:700;display:block;}
+    .stat-label{font-size:.72rem;color:var(--muted);letter-spacing:.05em;margin-top:.2rem;}
+
+    /* Hero right — waveform visual */
+    .hero-right{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;}
+    .wave-canvas{position:relative;width:400px;height:400px;}
+    .wave-box{width:100%;height:100%;background:var(--card);border:1px solid var(--border);padding:1.5rem;box-shadow:0 0 60px rgba(168,85,247,.08);display:flex;flex-direction:column;justify-content:space-between;gap:.5rem;}
+    .canvas-label{position:absolute;font-family:'Space Mono',monospace;font-size:.62rem;color:var(--purple);letter-spacing:.1em;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.15);padding:.18rem .5rem;}
+    .canvas-label.top{top:-1rem;left:1.2rem;}
+    .canvas-label.bottom{bottom:-1rem;right:1.2rem;}
+
+    /* ID3 tag rows inside wave box */
+    .tag-row{display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid var(--border);background:var(--panel);transition:all .3s;}
+    .tag-key{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--purple);letter-spacing:.08em;min-width:60px;font-weight:700;}
+    .tag-val{font-size:.75rem;color:var(--cream);font-family:'Space Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .tag-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0;animation:blink 2s infinite;}
+    .tag-dot:nth-child(1){animation-delay:.2s}
+    .tag-dot:nth-child(2){animation-delay:.5s}
+    .waveform{display:flex;align-items:center;gap:2px;height:38px;padding:.4rem .8rem;border:1px solid var(--border);background:var(--panel);}
+    .wave-bar{width:4px;border-radius:2px;background:var(--purple);opacity:.7;animation:wave 1.5s ease-in-out infinite;}
+    @keyframes wave{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.8)}}
+
+    /* ── SECTIONS ── */
+    section{padding:5rem 4rem;position:relative;z-index:1;}
+    .section-label{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--purple);letter-spacing:.2em;margin-bottom:.7rem;}
+    .section-title{font-family:'Syne',sans-serif;font-size:clamp(1.7rem,3vw,2.4rem);font-weight:800;line-height:1.1;margin-bottom:.9rem;}
+    .section-desc{font-size:.93rem;color:var(--muted);line-height:1.8;max-width:560px;}
+
+    /* ── HOW IT WORKS ── */
+    .how-section{background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:3rem;background:var(--border);}
+    .how-card{background:var(--card);padding:2.2rem;position:relative;overflow:hidden;transition:all .3s;}
+    .how-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--purple),transparent);transform:translateX(-100%);transition:transform .5s ease;}
+    .how-card:hover::before{transform:translateX(0);}
+    .how-card:hover{background:var(--hover-card);}
+    .how-num{font-family:'Space Mono',monospace;font-size:2.8rem;font-weight:700;color:rgba(168,85,247,.07);line-height:1;margin-bottom:.8rem;}
+    .how-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--white);margin-bottom:.5rem;}
+    .how-desc{font-size:.83rem;color:var(--muted);line-height:1.7;}
+    .how-code{margin-top:1rem;font-family:'Space Mono',monospace;font-size:.7rem;color:var(--purple);background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.12);padding:.45rem .75rem;display:inline-block;}
+
+    /* ── ID3 STRUCTURE ── */
+    .id3-section{border-top:1px solid var(--border);}
+    .id3-container{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:3rem;}
+    .id3-box{border:1px solid var(--border);background:var(--card);overflow:hidden;}
+    .id3-header{padding:.75rem 1.5rem;font-family:'Space Mono',monospace;font-size:.73rem;letter-spacing:.1em;font-weight:700;display:flex;align-items:center;gap:.6rem;}
+    .id3-header.read{background:rgba(168,85,247,.08);color:var(--purple);border-bottom:1px solid rgba(168,85,247,.15);}
+    .id3-header.edit{background:rgba(124,58,237,.08);color:#a78bfa;border-bottom:1px solid rgba(124,58,237,.15);}
+    .id3-header span{width:7px;height:7px;border-radius:50%;}
+    .id3-header.read span{background:var(--purple);}
+    .id3-header.edit span{background:#a78bfa;}
+    .id3-steps{padding:1.5rem;}
+    .id3-step{display:flex;align-items:flex-start;gap:.9rem;padding:.85rem 0;border-bottom:1px solid var(--border);}
+    .id3-step:last-child{border-bottom:none;}
+    .step-num{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--dark);background:var(--purple);width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;}
+    .step-num.p2{background:#a78bfa;}
+    .step-text{font-size:.82rem;color:var(--cream);line-height:1.5;}
+    .step-code{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--purple);margin-top:.25rem;}
+    .step-code.p2{color:#a78bfa;}
+    .id3-arrow{display:flex;align-items:center;justify-content:center;padding-top:5rem;flex-direction:column;gap:.4rem;}
+    .id3-arrow-line{width:2px;height:55px;background:linear-gradient(to bottom,var(--purple),#a78bfa);}
+    .id3-arrow-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.1em;writing-mode:vertical-rl;}
+
+    /* ── FEATURES ── */
+    .features-section{background:var(--panel);border-top:1px solid var(--border);}
+    .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:3rem;background:var(--border);}
+    .feature-card{background:var(--card);padding:1.8rem 2.2rem;display:flex;gap:1.3rem;align-items:flex-start;transition:all .3s;}
+    .feature-card:hover{background:var(--hover-card);}
+    .feature-icon-wrap{width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.12);flex-shrink:0;font-size:1.1rem;}
+    .feature-title{font-family:'Syne',sans-serif;font-size:.93rem;font-weight:700;color:var(--white);margin-bottom:.35rem;}
+    .feature-desc{font-size:.8rem;color:var(--muted);line-height:1.65;}
+
+    /* ── TECH STACK ── */
+    .tech-section{border-top:1px solid var(--border);}
+    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:3rem;}
+    .tech-card{border:1px solid var(--border);padding:1.6rem;background:var(--card);transition:all .3s;}
+    .tech-card:hover{border-color:var(--purple);transform:translateY(-3px);box-shadow:0 10px 28px rgba(168,85,247,.1);}
+    .tech-badge{font-family:'Space Mono',monospace;font-size:.66rem;color:var(--dark);background:var(--purple);padding:.18rem .55rem;display:inline-block;margin-bottom:.7rem;font-weight:700;letter-spacing:.04em;}
+    .tech-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--white);margin-bottom:.35rem;}
+    .tech-detail{font-size:.78rem;color:var(--muted);line-height:1.6;}
+
+    /* ── ABOUT ── */
+    .about-section{background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .about-inner{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;}
+    .about-avatar{width:80px;height:80px;background:rgba(168,85,247,.08);border:2px solid rgba(168,85,247,.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--purple);margin-bottom:1.2rem;}
+    .about-name{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:.25rem;}
+    .about-role{font-size:.82rem;color:var(--purple);font-family:'Space Mono',monospace;letter-spacing:.04em;margin-bottom:.9rem;}
+    .about-bio{font-size:.88rem;color:var(--muted);line-height:1.8;margin-bottom:1.4rem;}
+    .about-skills{display:flex;flex-wrap:wrap;gap:.45rem;}
+    .skill-tag{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--purple);border:1px solid rgba(168,85,247,.2);padding:.22rem .65rem;background:rgba(168,85,247,.04);letter-spacing:.04em;}
+    .about-card{border:1px solid var(--border);background:var(--card);padding:1.6rem;margin-bottom:.9rem;}
+    .about-card-title{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.5rem;}
+    .about-card-val{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;color:var(--white);}
+    .about-card-val span{color:var(--purple);}
+    .mentor-item{display:flex;align-items:center;gap:.75rem;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.83rem;color:var(--cream);}
+    .mentor-item:last-child{border-bottom:none;}
+    .mentor-dot{width:5px;height:5px;background:var(--purple);border-radius:50%;flex-shrink:0;}
+
+    /* ── FOOTER ── */
+    footer{padding:2.2rem 4rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .footer-left{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);}
+    .footer-left span{color:var(--purple);}
+    .footer-right{display:flex;gap:1.5rem;}
+    .footer-right a{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);text-decoration:none;letter-spacing:.04em;transition:color .2s;}
+    .footer-right a:hover{color:var(--purple);}
+
+    /* ── ANIMATIONS ── */
+    .fade-up{opacity:0;transform:translateY(20px);animation:fadeUp .65s ease forwards;}
+    @keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+    .fade-up:nth-child(1){animation-delay:.1s}.fade-up:nth-child(2){animation-delay:.2s}.fade-up:nth-child(3){animation-delay:.3s}.fade-up:nth-child(4){animation-delay:.4s}.fade-up:nth-child(5){animation-delay:.5s}
+
+    ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+    @media(max-width:900px){
+      nav{padding:1rem 1.5rem;}.nav-links{display:none;}
+      .hero{grid-template-columns:1fr;padding:6rem 1.5rem 3rem;}.hero-right{display:none;}
+      section{padding:3rem 1.5rem;}
+      .how-grid,.features-grid,.tech-grid{grid-template-columns:1fr;}
+      .id3-container{grid-template-columns:1fr;}
+      .about-inner{grid-template-columns:1fr;}
+      footer{flex-direction:column;gap:1rem;text-align:center;padding:2rem 1.5rem;}
+    }
+  </style>
 </head>
 <body>
 
-<header class="navbar">
-    <div class="nav-container">
-        <div class="logo">MP3 Tag Reader and Editor</div>
-
-        <div class="menu-toggle" id="menuToggle">&#9776;</div>
-
-        <div class="nav-buttons" id="navButtons">
-            <a href="https://github.com/Manu-hp1" class="btn">GitHub Profile</a>
-            <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" class="btn">View Project</a>
-        </div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">MANU-HP / MP3-TAG-TOOL</div>
+  <div class="nav-links">
+    <a href="#how">How It Works</a>
+    <a href="#id3">ID3 Structure</a>
+    <a href="#features">Features</a>
+    <a href="#tech">Tech</a>
+    <a href="#about">About</a>
+  </div>
+  <div class="nav-right">
+    <div class="theme-toggle-wrap" onclick="toggleTheme()" title="Toggle Light / Dark">
+      <span class="theme-icon" id="themeIconMoon">🌙</span>
+      <div class="theme-toggle"></div>
+      <span class="theme-icon" id="themeIconSun">☀️</span>
     </div>
-</header>
+    <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" target="_blank" class="nav-btn">View Source</a>
+  </div>
+</nav>
 
+<!-- HERO -->
 <section class="hero">
-    <div class="hero-left">
-        <h1>MP3 Tag Reader<br>& Editor</h1>
+  <div class="hero-left">
+    <div class="hero-tag fade-up"><span></span>C PROGRAMMING · BINARY FILE HANDLING</div>
+    <h1 class="fade-up">Read. Edit.<br/>Every <em>MP3 Tag.</em></h1>
+    <p class="hero-sub fade-up">A C-based metadata management tool that reads and edits ID3v2 tags in MP3 files — enabling precise manipulation of audio metadata at the binary level.</p>
+    <p class="hero-desc fade-up">Every MP3 file carries hidden metadata — title, artist, album, year, genre. It lives in the first few bytes of the file as structured ID3 frames. This project reads, parses and edits those frames directly using binary file handling in C.</p>
+    <div class="hero-btns fade-up">
+      <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" target="_blank" class="btn-primary">↗ Source Code</a>
+      <a href="https://www.canva.com/design/DAHC91lanjw/4E53-LgHxgEk6yMXc0EMRw/watch" target="_blank" class="btn-secondary">▶ Watch Demo</a>
+    </div>
+    <div class="hero-stats fade-up">
+      <div><span class="stat-num">ID3v2</span><div class="stat-label">TAG FORMAT</div></div>
+      <div><span class="stat-num">5+</span><div class="stat-label">METADATA FIELDS</div></div>
+      <div><span class="stat-num">0</span><div class="stat-label">AUDIO LOSS</div></div>
+      <div><span class="stat-num">C</span><div class="stat-label">LANGUAGE</div></div>
+    </div>
+  </div>
+
+  <!-- Hero right — ID3 tag visualizer -->
+  <div class="hero-right">
+    <div class="wave-canvas">
+      <div class="canvas-label top">ID3v2 HEADER — 10 BYTES</div>
+      <div class="wave-box" id="tagBox">
+        <!-- Waveform -->
+        <div class="waveform" id="waveform"></div>
+        <!-- Tag rows filled by JS -->
+      </div>
+      <div class="canvas-label bottom">AUDIO DATA — PRESERVED</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-label">// HOW IT WORKS</div>
+  <h2 class="section-title">The ID3 Tag Structure</h2>
+  <p class="section-desc">Every MP3 file starts with an ID3v2 header — 10 bytes that describe the tag version, flags and total size. After the header come individual frames, each with a 4-byte ID, 4-byte size and actual data. This project reads and writes those frames directly.</p>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-title">Read the ID3 Header</div>
+      <div class="how-desc">The first 10 bytes of every MP3 file contain the ID3v2 header — "ID3" identifier, version, flags and the total tag size encoded as a syncsafe integer.</div>
+      <div class="how-code">fread(&header, 10, 1, fp)</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-title">Parse Frame by Frame</div>
+      <div class="how-desc">After the header, each frame has a 4-byte frame ID (like TIT2 for title, TPE1 for artist), a 4-byte size and the actual string data. Frames are read one by one until the tag ends.</div>
+      <div class="how-code">fread(&frame, sizeof(FrameHeader), 1, fp)</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-title">Edit & Write Back</div>
+      <div class="how-desc">To edit a tag, the new value is written into the correct frame position using fseek() to jump to the exact byte offset. Audio data after the ID3 block is never touched.</div>
+      <div class="how-code">fseek(fp, offset, SEEK_SET)</div>
+    </div>
+  </div>
+</section>
+
+<!-- READ / EDIT FLOW -->
+<section class="id3-section" id="id3">
+  <div class="section-label">// EXECUTION FLOW</div>
+  <h2 class="section-title">Read & Edit Operations</h2>
+  <p class="section-desc">Two core operations — reading displays all metadata fields from the MP3 file. Editing writes a new value to a specific frame without touching the audio.</p>
+  <div class="id3-container">
+    <!-- READ -->
+    <div class="id3-box">
+      <div class="id3-header read"><span></span>READ — DISPLAY METADATA</div>
+      <div class="id3-steps">
+        <div class="id3-step"><div class="step-num">1</div><div><div class="step-text">Open MP3 file in binary read mode</div><div class="step-code">fopen(file, "rb")</div></div></div>
+        <div class="id3-step"><div class="step-num">2</div><div><div class="step-text">Read and validate 10-byte ID3v2 header</div><div class="step-code">check "ID3" identifier + version</div></div></div>
+        <div class="id3-step"><div class="step-num">3</div><div><div class="step-text">Decode syncsafe integer for total tag size</div><div class="step-code">size = (b0<<21)|(b1<<14)|(b2<<7)|b3</div></div></div>
+        <div class="id3-step"><div class="step-num">4</div><div><div class="step-text">Loop through frames — read 4-byte ID + size</div><div class="step-code">fread(&frame_id, 4, 1, fp)</div></div></div>
+        <div class="id3-step"><div class="step-num">5</div><div><div class="step-text">Read frame data and display field value</div><div class="step-code">fread(buffer, frame_size, 1, fp)</div></div></div>
+      </div>
     </div>
 
-    <div class="hero-right">
-        <p>
-            A C-based metadata management tool that reads and edits ID3 tags
-            in MP3 files, enabling structured manipulation of audio metadata
-            such as title, artist, album, year, and genre.
-        </p>
-
-        <div class="hero-buttons">
-            <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" class="primary-btn">Source Code</a>
-            <a href="https://www.canva.com/design/DAHC91lanjw/4E53-LgHxgEk6yMXc0EMRw/watch?utm_content=DAHC91lanjw&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0f85189865" class="primary-btn">Watch Demo</a>
-        </div>
+    <!-- EDIT -->
+    <div class="id3-box">
+      <div class="id3-header edit"><span></span>EDIT — MODIFY METADATA</div>
+      <div class="id3-steps">
+        <div class="id3-step"><div class="step-num p2">1</div><div><div class="step-text">Open MP3 file in binary read+write mode</div><div class="step-code p2">fopen(file, "r+b")</div></div></div>
+        <div class="id3-step"><div class="step-num p2">2</div><div><div class="step-text">Parse frames to find the target frame ID</div><div class="step-code p2">compare frame_id with "TIT2", "TPE1"...</div></div></div>
+        <div class="id3-step"><div class="step-num p2">3</div><div><div class="step-text">Seek to exact byte offset of frame data</div><div class="step-code p2">fseek(fp, data_offset, SEEK_SET)</div></div></div>
+        <div class="id3-step"><div class="step-num p2">4</div><div><div class="step-text">Write new value — pad or truncate to fit</div><div class="step-code p2">fwrite(new_value, size, 1, fp)</div></div></div>
+        <div class="id3-step"><div class="step-num p2">5</div><div><div class="step-text">Close file — audio data untouched</div><div class="step-code p2">fclose(fp)</div></div></div>
+      </div>
     </div>
+  </div>
 </section>
 
-<section class="section">
-    <h2>Why MP3TagTool?</h2>
-    <div class="features">
-        <div class="card">
-            <h3>ID3v2 Frame Parsing</h3>
-            <p>Reads structured ID3 metadata frames from MP3 files.</p>
-        </div>
-        <div class="card">
-            <h3>Metadata Editing</h3>
-            <p>Modify title, artist, album, year, genre and comment fields.</p>
-        </div>
-        <div class="card">
-            <h3>Binary File Handling</h3>
-            <p>Precise file pointer manipulation for safe tag updates.</p>
-        </div>
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="section-label">// KEY FEATURES</div>
+  <h2 class="section-title">What It Does</h2>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon-wrap">🎵</div><div><div class="feature-title">ID3v2 Tag Reading</div><div class="feature-desc">Reads the full ID3v2 header and parses every frame — title, artist, album, year, genre and comment — directly from the binary MP3 file.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">✏️</div><div><div class="feature-title">Metadata Editing</div><div class="feature-desc">Modifies any metadata field by seeking to the exact frame position and writing the new value. No libraries. Pure binary file manipulation in C.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">🔒</div><div><div class="feature-title">Audio Data Preserved</div><div class="feature-desc">All edits happen only inside the ID3 tag block at the start of the file. The actual audio data that follows is never read or modified.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">📐</div><div><div class="feature-title">Syncsafe Integer Decoding</div><div class="feature-desc">ID3v2 stores tag sizes as syncsafe integers — each byte uses only 7 bits. This project correctly decodes these using bitwise shift operations.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">🧱</div><div><div class="feature-title">Modular C Architecture</div><div class="feature-desc">Separate modules for reading, editing, header parsing and frame navigation. Each function does one thing — easy to read, test and extend.</div></div></div>
+    <div class="feature-card"><div class="feature-icon-wrap">💻</div><div><div class="feature-title">Command-Line Interface</div><div class="feature-desc">Simple CLI — pass the MP3 filename and the field to edit. No GUI, no dependencies, no installation needed beyond GCC on Linux.</div></div></div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="tech-section" id="tech">
+  <div class="section-label">// TECH STACK</div>
+  <h2 class="section-title">Built With</h2>
+  <div class="tech-grid">
+    <div class="tech-card"><div class="tech-badge">LANGUAGE</div><div class="tech-name">C Programming</div><div class="tech-detail">Pure C with no external libraries. Every operation — file parsing, frame navigation, metadata editing — built from scratch.</div></div>
+    <div class="tech-card"><div class="tech-badge">FORMAT</div><div class="tech-name">ID3v2 Standard</div><div class="tech-detail">Implements the ID3v2 tag specification — 10-byte header, 4-byte frame IDs, syncsafe integer size encoding and frame data parsing.</div></div>
+    <div class="tech-card"><div class="tech-badge">I/O</div><div class="tech-name">Binary File Handling</div><div class="tech-detail">fopen, fread, fwrite, fseek and fclose for precise binary file operations. File pointer positioned to exact byte offsets for safe editing.</div></div>
+    <div class="tech-card"><div class="tech-badge">MEMORY</div><div class="tech-name">Pointers & Structs</div><div class="tech-detail">C structures map to ID3 header and frame layouts. Pointer arithmetic navigates the binary file efficiently without unnecessary buffering.</div></div>
+    <div class="tech-card"><div class="tech-badge">BITWISE</div><div class="tech-name">Bit Manipulation</div><div class="tech-detail">Syncsafe integers decoded using left shift and OR operations. Frame size correctly reconstructed from four 7-bit encoded bytes.</div></div>
+    <div class="tech-card"><div class="tech-badge">PLATFORM</div><div class="tech-name">Linux / GCC</div><div class="tech-detail">Compiled with GCC using -Wall -Wextra flags for zero warnings. Developed and tested on Linux WSL environment.</div></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="about-inner">
+    <div>
+      <div class="about-avatar"> About Developer </div>
+      <div class="about-name">Manu H P</div>
+      <div class="about-role">Embedded Systems Trainee — Emertxe</div>
+      <p class="about-bio">Passionate about understanding binary file formats and low-level data structures. This project was part of my C++ Programming module at Emertxe Information Technology. Building it gave me hands-on understanding of how real-world media players read and write metadata without ever touching the audio.</p>
+      <div class="about-skills">
+        <span class="skill-tag">C Programming</span>
+        <span class="skill-tag">Binary File Handling</span>
+        <span class="skill-tag">Bit Manipulation</span>
+        <span class="skill-tag">Linux</span>
+        <span class="skill-tag">Pointers & Structs</span>
+        <span class="skill-tag">Embedded Systems</span>
+      </div>
     </div>
-</section>
-
-<section class="section light">
-    <h2>Key Features</h2>
-    <ul class="list">
-        <li>Read ID3 tag header and frame structure</li>
-        <li>Edit metadata fields securely</li>
-        <li>Preserve original audio data</li>
-        <li>Command-line interface</li>
-        <li>Modular source design</li>
-    </ul>
-</section>
-
-<section class="section">
-    <h2>Technology Stack</h2>
-    <div class="tech">
-        <span>C Programming</span>
-        <span>Binary File Handling</span>
-        <span>Pointers</span>
-        <span>Structures</span>
-        <span>Linux</span>
+    <div>
+      <div class="about-card"><div class="about-card-title">INSTITUTE</div><div class="about-card-val"><span>Emertxe</span> Information Technology</div></div>
+      <div class="about-card"><div class="about-card-title">MODULE</div><div class="about-card-val">Advance C <span>Programming</span></div></div>
+      <div class="about-card">
+        <div class="about-card-title">GUIDED BY</div>
+        <div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Anand Lokhande Sir</div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Jagadeesan S Sir</div>
+          <div class="mentor-item"><div class="mentor-dot"></div>Sapthagiri Shanmugam Sir</div>
+        </div>
+      </div>
+      <div class="about-card">
+        <div class="about-card-title">LINKS</div>
+        <div style="display:flex;gap:.7rem;margin-top:.5rem;">
+          <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" target="_blank" class="btn-primary" style="font-size:.72rem;padding:.45rem 1rem;">GitHub ↗</a>
+          <a href="https://github.com/Manu-hp1" target="_blank" class="btn-secondary" style="font-size:.72rem;padding:.45rem 1rem;">Profile ↗</a>
+        </div>
+      </div>
     </div>
+  </div>
 </section>
 
-<section class="section light">
-    <h2>About the Developer</h2>
-    <p class="about">
-        Hi, I’m <strong>Manu H P</strong>, an Embedded Systems trainee at Emertxe Information Technologies.
-        This project strengthened my understanding of binary file formats,
-        metadata frame structures, and low-level file manipulation.
-    </p>
-</section>
-
-<footer class="footer">
-    © 2026 Manu H P · MP3 Tag Reader & Editor
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">© 2026 <span>Manu H P</span> · MP3 Tag Reader & Editor · Built with C</div>
+  <div class="footer-right">
+    <a href="https://github.com/Manu-hp1" target="_blank">GitHub</a>
+    <a href="https://github.com/Manu-hp1/MP3_Tag_Reader_and_Editor" target="_blank">Repository</a>
+    <a href="https://manu-hp1.github.io/MP3_Tag_Reader_and_Editor.io/" target="_blank">Live Page</a>
+  </div>
 </footer>
 
-<script src="script.js"></script>
+<script>
+  // ── THEME TOGGLE ──
+  function toggleTheme(){
+    const html=document.documentElement;
+    const isLight=html.getAttribute('data-theme')==='light';
+    html.setAttribute('data-theme',isLight?'dark':'light');
+    localStorage.setItem('theme',isLight?'dark':'light');
+    buildTagBox();
+  }
+  const savedTheme=localStorage.getItem('theme')||'dark';
+  document.documentElement.setAttribute('data-theme',savedTheme);
+
+  // ── WAVEFORM ──
+  const waveform=document.getElementById('waveform');
+  for(let i=0;i<48;i++){
+    const bar=document.createElement('div');
+    bar.className='wave-bar';
+    bar.style.height=Math.random()*22+6+'px';
+    bar.style.animationDelay=Math.random()*1.5+'s';
+    bar.style.animationDuration=1.2+Math.random()*.8+'s';
+    waveform.appendChild(bar);
+  }
+
+  // ── ID3 TAG VISUALIZER ──
+  const tags=[
+    {key:'TIT2',val:'Bohemian Rhapsody'},
+    {key:'TPE1',val:'Queen'},
+    {key:'TALB',val:'A Night at the Opera'},
+    {key:'TYER',val:'1975'},
+    {key:'TCON',val:'Rock'},
+    {key:'COMM',val:'Classic rock masterpiece'},
+  ];
+  function buildTagBox(){
+    const box=document.getElementById('tagBox');
+    // Keep waveform, remove old tags
+    const existing=box.querySelectorAll('.tag-row');
+    existing.forEach(e=>e.remove());
+    tags.forEach((t,i)=>{
+      const row=document.createElement('div');
+      row.className='tag-row';
+      row.style.animationDelay=i*.1+'s';
+      row.innerHTML=`<div class="tag-key">${t.key}</div><div class="tag-val">${t.val}</div><div class="tag-dot"></div>`;
+      box.appendChild(row);
+    });
+  }
+  buildTagBox();
+
+  // Animate tag values occasionally
+  const fakeVals={
+    TIT2:['Stairway to Heaven','Hotel California','Comfortably Numb','Bohemian Rhapsody'],
+    TPE1:['Led Zeppelin','Eagles','Pink Floyd','Queen'],
+    TALB:['Led Zeppelin IV','Hotel California','The Wall','A Night at the Opera'],
+    TYER:['1971','1977','1979','1975'],
+    TCON:['Rock','Classic Rock','Progressive Rock','Rock'],
+    COMM:['A timeless classic','Iconic guitar riff','Epic concept album','Classic rock masterpiece'],
+  };
+  function animateTags(){
+    const rows=document.querySelectorAll('.tag-row');
+    if(rows.length){
+      const idx=Math.floor(Math.random()*rows.length);
+      const key=tags[idx].key;
+      const vals=fakeVals[key];
+      const newVal=vals[Math.floor(Math.random()*vals.length)];
+      rows[idx].querySelector('.tag-val').textContent=newVal;
+    }
+    setTimeout(animateTags,2200);
+  }
+  setTimeout(animateTags,2000);
+
+  // ── SCROLL REVEAL ──
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}});
+  },{threshold:.08});
+  document.querySelectorAll('.how-card,.feature-card,.tech-card,.about-card').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(18px)';el.style.transition='all .5s ease';obs.observe(el);
+  });
+</script>
 </body>
 </html>
